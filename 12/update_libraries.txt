@@ -1,0 +1,15 @@
+For Linux:
+
+pip list | grep llama-index > output.txt
+awk '{print $1}' output.txt > packages.txt
+while read package; do pip install --upgrade "$package"; done < packages.txt
+
+
+
+
+For Windows:
+
+pip list | findstr llama-index > output.txt
+for /F "tokens=1" %i in (output.txt) do @echo %i >> packages.txt
+for /F %i in (packages.txt) do pip install --upgrade %i
+
