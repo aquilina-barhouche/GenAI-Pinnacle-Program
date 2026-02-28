@@ -1,0 +1,21 @@
+Create an extremely precise QA system capable of extracting information from the 10-K filings
+of the Coca-Cola Company spanning the last decade, enabling it to respond to inquiries about
+the content within these documents.
+
+Dataset:
+
+https://investors.coca-colacompany.com/filings-reports/annual-filings-10-k
+
+Steps to be implemented:
+
+1.Use LlamaParser to read pdfs
+2.Compare the performance of different retrievers - sentence window retriever, automerging
+retriever, auto retriever.
+
+3.Rerank the documents post the retrieval stage
+
+4.Configure the query engine and subquestion query engine
+
+5.Evaluate the performance.
+
+Zip the ipynb file and upload the zip file as the submission.

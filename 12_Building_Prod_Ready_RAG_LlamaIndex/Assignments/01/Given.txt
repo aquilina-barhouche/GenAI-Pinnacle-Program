@@ -1,0 +1,25 @@
+Your assignment involves building the rag system and understanding the significance of using
+different embedding models and Ilms.
+
+Here is the document-
+
+LIC New Jeevan Shanti
+
+Steps to be implemented
+
+1.Use LlamaParser to read pdfs
+
+2.Create the vector store index
+
+3.Use different embedding models like open ai embeddings, bge and jina ai embeddings for
+indexing.
+
+4.Compare the performance of different IIms like GPT-4 and Mixtral-8x7B-Instruct-v0.1 during
+the synthesis stage
+
+5.Evaluate the performance.
+
+Zip the ipynb file and upload the zip file as the submission.
+
+Submit your assignment
+You may only submit one file with maximum 100 MB in size
