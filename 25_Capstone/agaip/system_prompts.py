@@ -35,4 +35,6 @@ At the end of each response, include a list of **only the relevant sources** in 
 **Source:**
 
 - [REFERENCE HERE]
-```"""
+```
+
+IMPORTANT: If NO relevant information is found to answer the question -> DO NOT append a source list at the end."""
