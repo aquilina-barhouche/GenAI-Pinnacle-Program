@@ -54,7 +54,10 @@ if st.sidebar.button("Log out", type="primary", icon=":material/account_circle:"
 
 st.sidebar.subheader("History")
 
-user_sessions = sqlite_memory.get_user_sessions(st.user.sub)  # type: ignore
+if st.user.get("is_logged_in"):
+    user_sessions = sqlite_memory.get_user_sessions(st.user.sub)  # type: ignore
+else:
+    st.stop()
 
 
 def reload_session(uuid):
