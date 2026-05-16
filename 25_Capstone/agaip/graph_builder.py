@@ -1,15 +1,16 @@
 import os
+from typing import Optional
 
+from fastembed import SparseTextEmbedding
 from langchain.agents import create_agent
 from langchain.tools import tool
 from langchain_core.tools.base import BaseTool
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
-from langchain_qdrant import QdrantVectorStore
+from langchain_qdrant import QdrantVectorStore, RetrievalMode
+from langchain_qdrant.sparse_embeddings import SparseEmbeddings, SparseVector
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Checkpointer
 from qdrant_client import QdrantClient
-from fastembed import SparseTextEmbedding
-from langchain_qdrant.sparse_embeddings import SparseEmbeddings, SparseVector
 
 
 class BM25Embedding(SparseEmbeddings):
@@ -17,16 +18,16 @@ class BM25Embedding(SparseEmbeddings):
         super().__init__()
         self.model = SparseTextEmbedding(model_name="Qdrant/bm25")
 
-
     def embed_documents(self, texts: list[str]) -> list[SparseVector]:
         raise NotImplementedError("embed_documents not implemented")
 
     def embed_query(self, text: str) -> SparseVector:
         sparse_embedding = list(self.model.embed([text]))[0]
         return SparseVector(
-                    indices=sparse_embedding.indices.tolist(), 
-                    values=sparse_embedding.values.tolist()
-                )
+            indices=sparse_embedding.indices.tolist(),
+            values=sparse_embedding.values.tolist(),
+        )
+
 
 def create_qdrant_search_tool() -> BaseTool:
 
@@ -51,7 +52,7 @@ def create_qdrant_search_tool() -> BaseTool:
         vector_name="dense-vector",
         sparse_embedding=BM25Embedding(),
         sparse_vector_name="sparse-bm25",
-        retrieval_mode="hybrid"
+        retrieval_mode=RetrievalMode.HYBRID,
     )
 
     retriever = vector_store.as_retriever(
@@ -81,7 +82,7 @@ def create_qdrant_search_tool() -> BaseTool:
 
 def create_chatbot_graph(
     rag_system_prompt,
-    checkpointer: Checkpointer,
+    checkpointer: Optional[Checkpointer] = None,
 ) -> CompiledStateGraph:
 
     rag_model = AzureChatOpenAI(
