@@ -1,0 +1,6 @@
+unstructured[pdf]==0.22.29
+langchain-community==0.4.1
+pytesseract==0.3.13
+qdrant-client==1.18.0
+openai==2.36.0
+fastembed==0.8.0
