@@ -1,32 +1,29 @@
 import os
 from typing import Optional
 
-from fastembed import SparseTextEmbedding
+from sentence_transformers import SentenceTransformer
+from rerankers import Reranker
 from langchain.agents import create_agent
 from langchain.tools import tool
 from langchain_core.tools.base import BaseTool
+from langchain_core.embeddings import Embeddings
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 from langchain_qdrant import QdrantVectorStore, RetrievalMode
-from langchain_qdrant.sparse_embeddings import SparseEmbeddings, SparseVector
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Checkpointer
 from qdrant_client import QdrantClient
 
-
-class BM25Embedding(SparseEmbeddings):
+reranker = Reranker("BAAI/bge-reranker-v2-m3", model_type="cross-encoder")
+class BGEEmbedding(Embeddings):
     def __init__(self):
         super().__init__()
-        self.model = SparseTextEmbedding(model_name="Qdrant/bm25")
+        self.model = SentenceTransformer("BAAI/bge-m3")
 
-    def embed_documents(self, texts: list[str]) -> list[SparseVector]:
-        raise NotImplementedError("embed_documents not implemented")
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return self.model.encode(texts).tolist()
 
-    def embed_query(self, text: str) -> SparseVector:
-        sparse_embedding = list(self.model.embed([text]))[0]
-        return SparseVector(
-            indices=sparse_embedding.indices.tolist(),
-            values=sparse_embedding.values.tolist(),
-        )
+    def embed_query(self, text: str) -> list[float]:
+        return self.model.encode([text])[0].tolist()
 
 
 def create_qdrant_search_tool() -> BaseTool:
@@ -37,27 +34,18 @@ def create_qdrant_search_tool() -> BaseTool:
         timeout=60,
     )
 
-    embedding = AzureOpenAIEmbeddings(
-        azure_endpoint=os.environ["AZURE_ENDPOINT"],
-        model=os.environ["EMBEDDING_MODEL"],
-        api_version="2024-12-01-preview",
-        api_key=os.environ["AZURE_API_KEY"],  # type: ignore
-    )
-
     vector_store = QdrantVectorStore(
         client=client,
         collection_name=os.environ["COLLECTION"],
         content_payload_key="text",
-        embedding=embedding,
-        vector_name="dense-vector",
-        sparse_embedding=BM25Embedding(),
-        sparse_vector_name="sparse-bm25",
-        retrieval_mode=RetrievalMode.HYBRID,
+        embedding=BGEEmbedding(),
+        vector_name="dense",
+        retrieval_mode=RetrievalMode.DENSE,
     )
 
     retriever = vector_store.as_retriever(
         search_type="similarity",
-        search_kwargs={"k": 20, "limit": 10},
+        search_kwargs={"limit": 50},
     )
 
     @tool
@@ -71,7 +59,13 @@ def create_qdrant_search_tool() -> BaseTool:
         docs = retriever.invoke(input=augmented_query)
 
         if docs:
-            messages = "\n\n".join([doc.page_content for doc in docs])
+            passages = [doc.page_content for doc in docs]
+
+            results = reranker.rank(query=augmented_query, docs=passages)
+
+            top_10 = [result.text for result in results.results[:10]]
+
+            messages = "\n\n".join(top_10)
 
             return messages
 
